@@ -110,8 +110,9 @@ export default function PatientDashboard() {
           </div>
 
           {/* Upload Prescription Banner */}
-          <div style={{ background: 'linear-gradient(90deg, #F0FDF4 0%, #FFFFFF 100%)', borderRadius: '24px', padding: '2.5rem', border: '1px solid #DCFCE7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.02)' }}>
-            <div style={{ flex: 1, maxWidth: '60%' }}>
+          <div style={{ background: 'url("/upload.jpeg") center/cover no-repeat', borderRadius: '24px', padding: '2.5rem', position: 'relative', overflow: 'hidden', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.02)' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 40%, rgba(255,255,255,0) 100%)', zIndex: 1 }}></div>
+            <div style={{ flex: 1, maxWidth: '60%', position: 'relative', zIndex: 2 }}>
               <h3 style={{ margin: '0 0 1rem 0', fontSize: '28px', fontWeight: '900', color: '#111827', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 Upload Prescription <span style={{ background: '#1B8A43', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>✓</span>
               </h3>
@@ -120,7 +121,7 @@ export default function PatientDashboard() {
                 Upload Now <ArrowRight size={18} />
               </button>
             </div>
-            <div style={{ width: '140px', height: '180px', background: 'white', border: '2px dashed #34D399', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+            <div style={{ position: 'relative', zIndex: 2, width: '140px', height: '180px', background: 'rgba(255, 255, 255, 0.95)', border: '2px dashed #34D399', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
                <FileText size={64} color="#10B981" />
                <span style={{ fontSize: '13px', fontWeight: '600', color: '#10B981' }}>Drag & Drop</span>
             </div>
