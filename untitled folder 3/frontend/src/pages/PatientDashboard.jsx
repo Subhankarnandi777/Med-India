@@ -16,7 +16,7 @@ export default function PatientDashboard() {
   }, []);
 
   const categories = [
-    { name: 'Search Medicines', icon: <Search size={28} color="#1B8A43" /> },
+    { name: 'Search Medicines', icon: <img src="/search-icon.jpeg" alt="Search" style={{ width: '28px', height: '28px', objectFit: 'contain' }} /> },
     { name: 'Health Conditions', icon: <Heart size={28} color="#3B82F6" /> },
     { name: 'All Medicines', icon: <Pill size={28} color="#F27C08" /> },
     { name: 'Wellness Products', icon: <Leaf size={28} color="#10B981" /> },
