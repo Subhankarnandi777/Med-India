@@ -90,19 +90,23 @@ export default function PatientDashboard() {
       <main style={{ flex: 1, padding: '2rem 4%', maxWidth: '1440px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         
         {/* Top Section Layout: Promo Banner & Upload Rx */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '3rem' }}>
           {/* Promo Banner */}
-          <div style={{ background: 'linear-gradient(135deg, #FFF7ED 0%, #ECFDF5 100%)', borderRadius: '24px', padding: '2rem 3rem', position: 'relative', overflow: 'hidden', minHeight: '220px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ background: 'url("/banner.jpeg") center/cover no-repeat', borderRadius: '24px', padding: '3rem 4rem', position: 'relative', overflow: 'hidden', minHeight: '320px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0.85) 45%, rgba(255,255,255,0) 100%)', zIndex: 1 }}></div>
             <div style={{ position: 'relative', zIndex: 2 }}>
-              <span style={{ background: '#F27C08', color: 'white', padding: '6px 14px', borderRadius: '16px', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px' }}>100% GENUINE MEDICINES</span>
-              <h2 style={{ margin: '1.5rem 0 0.75rem 0', fontSize: '32px', fontWeight: '900', color: '#111827', maxWidth: '70%', lineHeight: 1.2 }}>India's Most Trusted Healthcare App</h2>
-              <p style={{ margin: 0, fontSize: '16px', color: '#4B5563', fontWeight: '500' }}>Delivered securely in 30-60 mins</p>
+              <span style={{ color: '#F27C08', fontSize: '14px', fontWeight: '800', letterSpacing: '2px', textTransform: 'uppercase' }}>FAST • RELIABLE • SAFE</span>
+              <h2 style={{ margin: '1rem 0', fontSize: '48px', fontWeight: '900', color: '#1c355e', maxWidth: '60%', lineHeight: 1.1 }}>
+                Your Health,<br/>
+                <span style={{ color: '#1B8A43' }}>Our Priority</span>
+              </h2>
+              <p style={{ margin: '0 0 2rem 0', fontSize: '18px', color: '#4B5563', fontWeight: '500', maxWidth: '50%' }}>Genuine medicines delivered quickly at your doorsteps</p>
+              
+              <button style={{ background: '#1B8A43', border: 'none', color: 'white', padding: '1rem 2.5rem', borderRadius: '30px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 15px rgba(27, 138, 67, 0.4)', transition: 'transform 0.1s', width: 'fit-content' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
+                Order Now <ArrowRight size={20} />
+              </button>
             </div>
-            {/* Decorative background elements for banner */}
-            <div style={{ position: 'absolute', right: '-40px', bottom: '-40px', width: '250px', height: '250px', background: '#1B8A43', borderRadius: '50%', opacity: 0.08, zIndex: 1 }}></div>
-            <div style={{ position: 'absolute', right: '40px', top: '30px', zIndex: 2 }}>
-              <Heart size={140} color="#1B8A43" strokeWidth={1} style={{ opacity: 0.15 }} />
-            </div>
+            
           </div>
 
           {/* Upload Prescription Banner */}
