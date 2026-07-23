@@ -52,6 +52,8 @@ async function authHeaders() {
   if (jwtToken) {
     headers.Authorization = `Bearer ${jwtToken}`;
   }
+  if (currentUser?.id) headers["X-User-ID"] = currentUser.id;
+  if (currentUser?.email) headers["X-User-Email"] = currentUser.email;
 
   return headers;
 }
@@ -206,7 +208,7 @@ export async function signIn(email, password, selectedRole = "Patient") {
   }
 
   // Save JWT if returned directly
-  const token = json.token || json.session?.token || json.access_token;
+  const token = json.access_token || json.session?.access_token || json.jwt || json.token || json.session?.token;
   if (token) {
     saveToken(token);
   }

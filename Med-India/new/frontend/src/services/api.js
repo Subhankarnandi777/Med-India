@@ -53,6 +53,10 @@ export async function fetchOrders() {
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
+  const { getCurrentUserId, getCurrentEmail } = await import('./neonAuth');
+  if (getCurrentUserId()) headers["X-User-ID"] = getCurrentUserId();
+  if (getCurrentEmail()) headers["X-User-Email"] = getCurrentEmail();
+
   const res = await fetch(`${API_URL}/orders/`, { headers });
   if (!res.ok) throw new Error("Failed to fetch orders");
   return res.json();
@@ -66,6 +70,10 @@ export async function createOrder(orderData) {
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
+  const { getCurrentUserId, getCurrentEmail } = await import('./neonAuth');
+  if (getCurrentUserId()) headers["X-User-ID"] = getCurrentUserId();
+  if (getCurrentEmail()) headers["X-User-Email"] = getCurrentEmail();
+
   const res = await fetch(`${API_URL}/orders/`, {
     method: "POST",
     headers,
@@ -109,6 +117,10 @@ export async function cancelOrder(orderId) {
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
+  const { getCurrentUserId, getCurrentEmail } = await import('./neonAuth');
+  if (getCurrentUserId()) headers["X-User-ID"] = getCurrentUserId();
+  if (getCurrentEmail()) headers["X-User-Email"] = getCurrentEmail();
+
   const res = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
     method: "PATCH",
     headers,

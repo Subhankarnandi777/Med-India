@@ -37,6 +37,34 @@ def auth_status():
         "message": "Authentication is managed directly by Neon Auth."
     }
 
+@router.get("/profile")
+def get_profile(user_id: Optional[str] = None, email: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    Get user profile by user_id or email
+    """
+    if not user_id and not email:
+        raise HTTPException(status_code=400, detail="Must provide user_id or email")
+    
+    query = db.query(User)
+    if user_id:
+        query = query.filter(User.id == user_id)
+    elif email:
+        query = query.filter(User.email == email)
+    
+    user = query.first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Profile not found")
+        
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        "mobile": user.mobile,
+        "extra_details": user.extra_details,
+        "created_at": user.created_at.isoformat() if user.created_at else None
+    }
+
 @router.post("/profile")
 def save_profile(req: ProfileSaveRequest, db: Session = Depends(get_db)):
     """
