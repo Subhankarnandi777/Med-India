@@ -128,3 +128,33 @@ export async function cancelOrder(orderId) {
   if (!res.ok) throw new Error("Failed to cancel order");
   return res.json();
 }
+
+export async function uploadPrescription(file, notes = "") {
+  const token = getToken(); // Changed: removed 'await' to match other functions
+  
+  const headers = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  
+  // Attach the required custom identification headers
+  const { getCurrentUserId, getCurrentEmail } = await import('./neonAuth');
+  if (getCurrentUserId()) headers["X-User-ID"] = getCurrentUserId();
+  if (getCurrentEmail()) headers["X-User-Email"] = getCurrentEmail();
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("notes", notes);
+
+  const res = await fetch(`${API_URL}/prescriptions/upload`, {
+    method: "POST",
+    headers, // Do NOT manually add "Content-Type": "multipart/form-data" here!
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to upload prescription");
+  }
+
+  return res.json();
+}
