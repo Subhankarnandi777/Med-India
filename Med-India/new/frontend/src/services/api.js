@@ -39,21 +39,36 @@ export { getToken };
 export async function fetchMedicines() {
   const res = await fetch(`${API_URL}/medicines/`);
   if (!res.ok) throw new Error("Failed to fetch medicines");
-  return res.json();
+  const data = await res.json();
+  return data.map(med => ({
+    ...med,
+    generic_name: med.genericName !== undefined ? med.genericName : med.generic_name,
+    requires_prescription: med.requiresPrescription !== undefined ? med.requiresPrescription : med.requires_prescription
+  }));
 }
 
 export async function fetchOrders() {
-  const res = await fetch(`${API_URL}/orders/`);
+  const token = getToken();
+  const headers = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_URL}/orders/`, { headers });
   if (!res.ok) throw new Error("Failed to fetch orders");
   return res.json();
 }
 
 export async function createOrder(orderData) {
+  const token = getToken();
+  const headers = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
   const res = await fetch(`${API_URL}/orders/`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(orderData),
   });
 
@@ -85,5 +100,19 @@ export async function createPrescription(rxData) {
 
   if (!res.ok) throw new Error("Failed to create prescription");
 
+  return res.json();
+}
+
+export async function cancelOrder(orderId) {
+  const token = getToken();
+  const headers = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
+    method: "PATCH",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to cancel order");
   return res.json();
 }

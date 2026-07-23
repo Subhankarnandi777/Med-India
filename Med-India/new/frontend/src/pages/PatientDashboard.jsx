@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchMedicines, fetchOrders, createOrder } from '../services/api';
+import { fetchMedicines, fetchOrders, createOrder, cancelOrder } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   ShoppingCart, LogOut, Package, Pill, Search, ListFilter, Menu, 
@@ -22,6 +22,8 @@ export default function PatientDashboard() {
   const [showRxModal, setShowRxModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelOrderId, setCancelOrderId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
   // Hero Banner Rotation State
@@ -56,24 +58,47 @@ export default function PatientDashboard() {
   };
 
   const addToCart = (med) => {
+    if (med.stock <= 0) {
+      showToast(`${med.name} is out of stock`);
+      return;
+    }
+    let stockExceeded = false;
     setCart(prev => {
       const existing = prev.find(item => item.id === med.id);
       if (existing) {
+        if (existing.quantity >= med.stock) {
+          stockExceeded = true;
+          return prev;
+        }
         return prev.map(item => item.id === med.id ? { ...item, quantity: item.quantity + 1 } : item);
       }
       return [...prev, { ...med, quantity: 1 }];
     });
-    showToast(`Added ${med.name} to cart`);
+    if (stockExceeded) {
+      showToast(`Cannot add more. Only ${med.stock} in stock.`);
+    } else {
+      showToast(`Added ${med.name} to cart`);
+    }
   };
 
   const updateCartQty = (id, delta) => {
+    let stockExceeded = false;
+    let limit = 0;
     setCart(prev => prev.map(item => {
       if (item.id === id) {
         const newQty = item.quantity + delta;
+        if (newQty > item.stock) {
+          stockExceeded = true;
+          limit = item.stock;
+          return item;
+        }
         return newQty > 0 ? { ...item, quantity: newQty } : null;
       }
       return item;
     }).filter(Boolean));
+    if (stockExceeded) {
+      showToast(`Cannot add more. Only ${limit} in stock.`);
+    }
   };
 
   const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -94,6 +119,25 @@ export default function PatientDashboard() {
       setTab('orders');
     } catch (e) {
       showToast('Failed to place order. Try again.');
+    }
+  };
+
+  const handleCancelOrder = (orderId) => {
+    setCancelOrderId(orderId);
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!cancelOrderId) return;
+    try {
+      const updatedOrder = await cancelOrder(cancelOrderId);
+      setOrders(prev => prev.map(o => o.id === cancelOrderId ? updatedOrder : o));
+      showToast("Order cancelled successfully!");
+    } catch (e) {
+      showToast("Failed to cancel order.");
+    } finally {
+      setShowCancelModal(false);
+      setCancelOrderId(null);
     }
   };
 
@@ -398,14 +442,23 @@ export default function PatientDashboard() {
                         <span style={{ fontSize: '18px', fontWeight: '900', color: '#111827' }}>₹{med.price}</span>
                       </div>
 
-                      <button 
-                        onClick={() => addToCart(med)}
-                        style={{ background: 'white', border: '2px solid #1B8A43', color: '#1B8A43', padding: '0.4rem 1.25rem', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s' }}
-                        onMouseOver={e => { e.currentTarget.style.background = '#1B8A43'; e.currentTarget.style.color = 'white'; }}
-                        onMouseOut={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#1B8A43'; }}
-                      >
-                        Add
-                      </button>
+                      {med.stock <= 0 ? (
+                        <button 
+                          disabled
+                          style={{ background: '#F3F4F6', border: '2px solid #D1D5DB', color: '#9CA3AF', padding: '0.4rem 1.25rem', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'not-allowed' }}
+                        >
+                          Out of Stock
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => addToCart(med)}
+                          style={{ background: 'white', border: '2px solid #1B8A43', color: '#1B8A43', padding: '0.4rem 1.25rem', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s' }}
+                          onMouseOver={e => { e.currentTarget.style.background = '#1B8A43'; e.currentTarget.style.color = 'white'; }}
+                          onMouseOut={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#1B8A43'; }}
+                        >
+                          Add
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -464,12 +517,21 @@ export default function PatientDashboard() {
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
                     <span style={{ fontSize: '20px', fontWeight: '900', color: '#111827' }}>₹{med.price}</span>
-                    <button 
-                      onClick={() => addToCart(med)}
-                      style={{ background: '#1B8A43', border: 'none', color: 'white', padding: '0.5rem 1.25rem', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
-                    >
-                      Add to Cart
-                    </button>
+                    {med.stock <= 0 ? (
+                      <button 
+                        disabled
+                        style={{ background: '#E5E7EB', border: 'none', color: '#9CA3AF', padding: '0.5rem 1.25rem', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'not-allowed' }}
+                      >
+                        Out of Stock
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => addToCart(med)}
+                        style={{ background: '#1B8A43', border: 'none', color: 'white', padding: '0.5rem 1.25rem', borderRadius: '10px', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}
+                      >
+                        Add to Cart
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -499,8 +561,8 @@ export default function PatientDashboard() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                         <span style={{ fontWeight: '800', fontSize: '16px', color: '#111827' }}>{ord.id}</span>
                         <span style={{ 
-                          background: ord.status === 'Delivered' ? '#D1FAE5' : '#FEF3C7', 
-                          color: ord.status === 'Delivered' ? '#065F46' : '#92400E',
+                          background: ord.status === 'Delivered' ? '#D1FAE5' : ord.status === 'Cancelled' ? '#FEE2E2' : '#FEF3C7', 
+                          color: ord.status === 'Delivered' ? '#065F46' : ord.status === 'Cancelled' ? '#EF4444' : '#92400E',
                           padding: '2px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '700' 
                         }}>
                           {ord.status || 'Pending'}
@@ -511,10 +573,30 @@ export default function PatientDashboard() {
                       </p>
                     </div>
 
-                    <div style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
                       <span style={{ fontSize: '18px', fontWeight: '900', color: '#111827' }}>
                         ₹{ord.items ? ord.items.reduce((acc, i) => acc + (i.price * i.quantity), 0) : 0}
                       </span>
+                      {ord.status === 'Pending' && (
+                        <button
+                          onClick={() => handleCancelOrder(ord.id)}
+                          style={{
+                            background: '#EF4444',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.4rem 0.8rem',
+                            borderRadius: '8px',
+                            fontWeight: '700',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            transition: 'background 0.2s'
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = '#DC2626'}
+                          onMouseOut={e => e.currentTarget.style.background = '#EF4444'}
+                        >
+                          Cancel Order
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -838,6 +920,39 @@ export default function PatientDashboard() {
               <div style={{ padding: '1rem', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '13px', color: '#4B5563' }}>
                 💬 Live Chat Support available 9 AM - 9 PM daily
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: Confirm Order Cancellation */}
+      {showCancelModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div style={{ background: 'white', width: '100%', maxWidth: '400px', borderRadius: '24px', padding: '2rem', position: 'relative', textAlign: 'center', boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)' }}>
+            <button onClick={() => { setShowCancelModal(false); setCancelOrderId(null); }} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+            
+            <div style={{ background: '#FEE2E2', width: '56px', height: '56px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem auto' }}>
+              <AlertCircle size={32} color="#EF4444" />
+            </div>
+
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '20px', fontWeight: '900', color: '#111827' }}>Cancel Order</h3>
+            <p style={{ margin: '0 0 1.5rem 0', color: '#6B7280', fontSize: '14px', lineHeight: '1.5' }}>
+              Are you sure you want to cancel order <strong>{cancelOrderId}</strong>? This action cannot be undone.
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button 
+                onClick={() => { setShowCancelModal(false); setCancelOrderId(null); }}
+                style={{ flex: 1, background: '#F3F4F6', color: '#4B5563', border: 'none', padding: '0.75rem', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}
+              >
+                No, Keep Order
+              </button>
+              <button 
+                onClick={confirmCancelOrder}
+                style={{ flex: 1, background: '#EF4444', color: 'white', border: 'none', padding: '0.75rem', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}
+              >
+                Yes, Cancel
+              </button>
             </div>
           </div>
         </div>
