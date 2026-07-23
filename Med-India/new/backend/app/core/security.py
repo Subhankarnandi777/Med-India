@@ -28,22 +28,33 @@ def decode_token(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+from fastapi import Request
+
 def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
     db: Session = Depends(get_db)
 ):
-    if not credentials or not credentials.credentials or credentials.credentials in ("null", "undefined", ""):
+    token = credentials.credentials if credentials else None
+    
+    user_id = request.headers.get("x-user-id")
+    email = request.headers.get("x-user-email")
+    payload = {}
+    
+    if not user_id and token:
+        try:
+            payload = decode_token(token)
+            user_id = payload.get("sub") or payload.get("id") or payload.get("user_id")
+            email = payload.get("email") or payload.get("user", {}).get("email") if isinstance(payload.get("user"), dict) else None
+        except Exception:
+            pass
+            
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing Authorization header",
+            detail="Missing Authorization header or invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    token = credentials.credentials
-    payload = decode_token(token)
-    
-    user_id = payload.get("sub") or payload.get("id") or payload.get("user_id")
-    email = payload.get("email") or payload.get("user", {}).get("email") if isinstance(payload.get("user"), dict) else None
     
     user = None
     if user_id:

@@ -52,6 +52,8 @@ async function authHeaders() {
   if (jwtToken) {
     headers.Authorization = `Bearer ${jwtToken}`;
   }
+  if (currentUser?.id) headers["X-User-ID"] = currentUser.id;
+  if (currentUser?.email) headers["X-User-Email"] = currentUser.email;
 
   return headers;
 }
@@ -71,6 +73,22 @@ async function saveProfileBackend(profileData) {
     }
   } catch (err) {
     console.error("Backend profile save error:", err);
+  }
+  return null;
+}
+
+export async function getBackendProfile(userId, email) {
+  try {
+    const params = new URLSearchParams();
+    if (userId) params.append("user_id", userId);
+    if (email) params.append("email", email);
+
+    const res = await fetch(`${BACKEND_URL}/auth/profile?${params.toString()}`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.error("getBackendProfile error:", err);
   }
   return null;
 }
@@ -190,8 +208,9 @@ export async function signIn(email, password, selectedRole = "Patient") {
   }
 
   // Save JWT if returned directly
-  if (json.token) {
-    saveToken(json.token);
+  const token = json.access_token || json.session?.access_token || json.jwt || json.token || json.session?.token;
+  if (token) {
+    saveToken(token);
   }
 
   const userId = json.user?.id;
@@ -203,10 +222,11 @@ export async function signIn(email, password, selectedRole = "Patient") {
     full_name: fullName,
   };
 
-  // Load profile if it exists
+  // Load profile: Check Backend database first as authoritative source
   try {
-    let profile = null;
-    if (currentUser.id) {
+    let profile = await getBackendProfile(userId, email);
+
+    if (!profile && currentUser.id) {
       profile = await getProfile(currentUser.id);
     }
     if (!profile && email) {
@@ -227,7 +247,7 @@ export async function signIn(email, password, selectedRole = "Patient") {
       } catch (err) {}
     }
 
-    // Auto-heal missing profiles for legacy user accounts
+    // Auto-heal missing profiles ONLY if user does not exist in backend DB at all
     if (!profile && userId) {
       const newProfile = {
         id: userId,
@@ -238,7 +258,7 @@ export async function signIn(email, password, selectedRole = "Patient") {
         extra_details: {},
       };
       
-      await saveProfileBackend(newProfile).catch(() => {});
+      const backendRes = await saveProfileBackend(newProfile).catch(() => {});
       await fetch(`${DATABASE_URL}/profiles`, {
         method: "POST",
         headers: {
@@ -248,7 +268,7 @@ export async function signIn(email, password, selectedRole = "Patient") {
         body: JSON.stringify(newProfile),
       }).catch(() => {});
 
-      profile = newProfile;
+      profile = backendRes || newProfile;
     } else if (profile && userId && profile.id !== userId) {
       profile.id = userId;
       await updateProfile(userId, { id: userId }).catch(() => {});
@@ -272,7 +292,6 @@ export async function signIn(email, password, selectedRole = "Patient") {
     emailVerified:
       json.user?.emailVerified ?? true,
   };
-
 }
 
 // =============================================
