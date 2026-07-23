@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\ANINDITA\Downloads\Med-India\Med-India\Med-India\untitled folder 3\backend\venv"
+VIRTUAL_ENV="D:\Med-India v2\Med-India\new\backend\venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

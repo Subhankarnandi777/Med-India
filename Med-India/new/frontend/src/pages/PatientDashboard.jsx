@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { fetchMedicines, fetchOrders, createOrder } from '../services/api';
+import React, { useState, useEffect, useRef } from "react";
+import { fetchMedicines, fetchOrders, createOrder, uploadPrescription,} from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   ShoppingCart, LogOut, Package, Pill, Search, ListFilter, Menu, 
@@ -39,6 +39,7 @@ export default function PatientDashboard() {
   const [rxNotes, setRxNotes] = useState('');
   const [rxFile, setRxFile] = useState(null);
   const [rxSuccess, setRxSuccess] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchMedicines().then(data => {
@@ -97,17 +98,35 @@ export default function PatientDashboard() {
     }
   };
 
-  const handleRxSubmit = (e) => {
+  const handleRxSubmit = async (e) => {
     e.preventDefault();
-    setRxSuccess(true);
-    setTimeout(() => {
-      setRxSuccess(false);
-      setShowRxModal(false);
-      setRxNotes('');
-      setRxFile(null);
-      showToast('Prescription uploaded successfully!');
-    }, 1500);
+
+    if (!rxFile) {
+      showToast("Please select a prescription file.");
+      return;
+    }
+
+    try {
+      await uploadPrescription(rxFile, rxNotes);
+
+      setRxSuccess(true);
+
+      setTimeout(() => {
+        setRxSuccess(false);
+        setShowRxModal(false);
+        setRxNotes("");
+        setRxFile(null);
+
+        showToast("Prescription uploaded successfully!");
+      }, 1500);
+
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to upload prescription.");
+    }
   };
+
+  
 
   const categories = [
     { name: 'Search Medicines', icon: <Search size={28} color="#10B981" />, action: () => setTab('medicines') },
@@ -771,11 +790,11 @@ export default function PatientDashboard() {
               </div>
             ) : (
               <form onSubmit={handleRxSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ border: '2px dashed #34D399', borderRadius: '16px', padding: '2rem', textAlign: 'center', background: '#ECFDF5', cursor: 'pointer' }}>
+                <div onClick={() => fileInputRef.current.click()} style={{ border: '2px dashed #34D399', borderRadius: '16px', padding: '2rem', textAlign: 'center', background: '#ECFDF5', cursor: 'pointer' }}>
                   <UploadCloud size={40} color="#10B981" style={{ marginBottom: '0.5rem' }} />
                   <p style={{ margin: '0 0 0.25rem 0', fontWeight: '700', color: '#065F46' }}>Click or Drag File to Upload</p>
                   <span style={{ fontSize: '12px', color: '#6B7280' }}>Supports JPG, PNG, PDF (Max 10MB)</span>
-                  <input type="file" onChange={e => setRxFile(e.target.files[0])} style={{ display: 'none' }} id="rxFileInput" />
+                  <input ref={fileInputRef} type="file" onChange={e => setRxFile(e.target.files[0])} style={{ display: 'none' }} id="rxFileInput" />
                 </div>
                 {rxFile && <div style={{ fontSize: '13px', fontWeight: '600', color: '#10B981' }}>Selected: {rxFile.name}</div>}
 

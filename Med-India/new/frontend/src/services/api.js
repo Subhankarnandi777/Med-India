@@ -87,3 +87,28 @@ export async function createPrescription(rxData) {
 
   return res.json();
 }
+
+
+export async function uploadPrescription(file, notes = "") {
+  const token = await getToken();
+  console.log("TOKEN =", token);  // <-- add this
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("notes", notes);
+
+  const res = await fetch(`${API_URL}/prescriptions/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to upload prescription");
+  }
+
+  return res.json();
+  
+}
