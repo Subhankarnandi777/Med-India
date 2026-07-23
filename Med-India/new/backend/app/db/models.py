@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, DateTime, Integer, Float, Boolean, BigInteger
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -54,4 +54,6 @@ class Prescription(Base):
     doctor_name = Column(String, nullable=False)
     medicines = Column(JSONB, nullable=False)  # Array of dict (name, quantity, price)
     instructions = Column(String, nullable=True)
-    created_at = Column(DateTime)
+    created_at = Column(DateTime)
+    file_name = Column(String, nullable=True)
+    user_id = Column(UUID(as_uuid=True), index=True, nullable=True)

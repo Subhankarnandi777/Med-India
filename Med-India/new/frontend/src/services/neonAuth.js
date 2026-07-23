@@ -1,24 +1,12 @@
-// =============================================
-// Med India - Neon Authentication
-// =============================================
-
 const AUTH_URL =
   "https://ep-noisy-poetry-aiql2qy4.neonauth.c-4.us-east-1.aws.neon.tech/neondb/auth";
 
 const DATABASE_URL =
   "https://ep-noisy-poetry-aiql2qy4.apirest.c-4.us-east-1.aws.neon.tech/neondb/rest/v1";
 
-// =============================================
-// Session
-// =============================================
-
 let jwtToken = localStorage.getItem("jwtToken");
 let currentUser = null;
 let pendingProfile = null;
-
-// =============================================
-// Helpers
-// =============================================
 
 const isEmail = (value) => value.includes("@");
 
@@ -93,12 +81,6 @@ export async function getBackendProfile(userId, email) {
   return null;
 }
 
-// =============================================
-// Signup
-// =============================================
-// Signup
-// =============================================
-
 export async function signUp({
   email,
   password,
@@ -166,10 +148,6 @@ export async function signUp({
   };
 }
 
-// =============================================
-// Login
-// =============================================
-
 export async function signIn(email, password, selectedRole = "Patient") {
 
   email = formatEmail(email);
@@ -222,7 +200,6 @@ export async function signIn(email, password, selectedRole = "Patient") {
     full_name: fullName,
   };
 
-  // Load profile: Check Backend database first as authoritative source
   try {
     let profile = await getBackendProfile(userId, email);
 
@@ -247,7 +224,6 @@ export async function signIn(email, password, selectedRole = "Patient") {
       } catch (err) {}
     }
 
-    // Auto-heal missing profiles ONLY if user does not exist in backend DB at all
     if (!profile && userId) {
       const newProfile = {
         id: userId,
@@ -294,10 +270,6 @@ export async function signIn(email, password, selectedRole = "Patient") {
   };
 }
 
-// =============================================
-// Resend Verification OTP
-// =============================================
-
 export async function resendOtp(email) {
 
   email = formatEmail(email);
@@ -328,9 +300,6 @@ export async function resendOtp(email) {
 
 }
 
-// =============================================
-// Verify OTP
-// =============================================
 
 export async function verifyOtp(email, otp) {
 
@@ -395,7 +364,6 @@ export async function verifyOtp(email, otp) {
     email: email || json.user?.email,
   };
 
-  // Create profile in database if it does not exist
   if (userId) {
     try {
       let existing = await getProfile(userId);
@@ -405,7 +373,6 @@ export async function verifyOtp(email, otp) {
 
       if (profileToSave) {
         profileToSave.id = userId;
-        // Always sync with backend database first
         const backendProfile = await saveProfileBackend(profileToSave);
         if (backendProfile) {
           currentUser = backendProfile;
@@ -462,10 +429,6 @@ export async function verifyOtp(email, otp) {
 
 }
 
-// =============================================
-// Get Profile
-// =============================================
-
 export async function getProfile(userId) {
   if (!userId) return null;
   try {
@@ -517,11 +480,6 @@ export async function getProfileByEmail(email) {
     return null;
   }
 }
-
-// =============================================
-// Update Profile
-// =============================================
-
 export async function updateProfile(
   id,
   updates
@@ -560,11 +518,6 @@ export async function updateProfile(
   return true;
 
 }
-
-// =============================================
-// Session Helpers
-// =============================================
-
 export function getCurrentUser() {
 
   return currentUser;
@@ -604,10 +557,6 @@ export function clearSession() {
   saveToken(null);
 
 }
-// =============================================
-// Forgot Password
-// =============================================
-
 export async function forgotPassword(email) {
 
   email = formatEmail(email);
@@ -631,10 +580,6 @@ export async function forgotPassword(email) {
 
   return true;
 }
-
-// =============================================
-// Verify Password Reset OTP
-// =============================================
 
 export async function verifyPasswordResetOtp(
   email,
@@ -675,11 +620,6 @@ export async function verifyPasswordResetOtp(
 
   return json.token;
 }
-
-// =============================================
-// Change Password
-// =============================================
-
 export async function changePassword(
   token,
   password
@@ -706,10 +646,6 @@ export async function changePassword(
   return true;
 }
 
-// =============================================
-// Reset Password
-// =============================================
-
 export async function resetPassword(email) {
 
   email = formatEmail(email);
@@ -733,10 +669,6 @@ export async function resetPassword(email) {
 
   return true;
 }
-
-// =============================================
-// Default Export
-// =============================================
 
 const NeonAuth = {
   signUp,

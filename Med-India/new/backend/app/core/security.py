@@ -36,7 +36,13 @@ def get_current_user(
     db: Session = Depends(get_db)
 ):
     token = credentials.credentials if credentials else None
-    
+
+    print("=" * 50)
+    print("Authorization Token:", token[:40] + "..." if token else None)
+    print("X-User-ID:", request.headers.get("x-user-id"))
+    print("X-User-Email:", request.headers.get("x-user-email"))
+    print("=" * 50)
+
     user_id = request.headers.get("x-user-id")
     email = request.headers.get("x-user-email")
     payload = {}
@@ -60,6 +66,7 @@ def get_current_user(
     if user_id:
         try:
             user = db.query(User).filter(User.id == user_id).first()
+            print("Database user:", user)
         except Exception:
             pass
             
