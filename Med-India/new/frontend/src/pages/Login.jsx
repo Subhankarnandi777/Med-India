@@ -26,7 +26,7 @@ export default function Login() {
         
         // Strict Role Match Check: Reject login if user role does not match selected tab
         if (userRole && userRole !== role) {
-          setError(`Access Denied: This account is registered as a ${userRole}. Please select the '${userRole}' tab to log in.`);
+          setError(`Access Denied`);
           return;
         }
 
@@ -68,7 +68,7 @@ export default function Login() {
 
         // Strict Role Match Check
         if (userRole && userRole !== role) {
-          setError(`Access Denied: This account is registered as a ${userRole}. Please select the '${userRole}' tab to log in.`);
+          setError(`Access Denied`);
           return;
         }
 
