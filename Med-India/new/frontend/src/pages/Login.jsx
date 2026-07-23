@@ -110,6 +110,7 @@ export default function Login() {
     <img
         src="/logoo.png"
         alt="Med India Logo"
+        className="login-logo"
         style={{
             width: '240px',
             mixBlendMode: 'multiply',
@@ -120,6 +121,7 @@ export default function Login() {
 
       {/* Glassmorphism Card */}
       <div
+  className="login-card"
   style={{
     width: "100%",
     maxWidth: "450px",
@@ -339,6 +341,15 @@ export default function Login() {
       <style>{`
         input:focus { border-color: #1B8A43 !important; outline: none !important; box-shadow: 0 0 0 3px rgba(27, 138, 67, 0.1) !important; }
         input::placeholder { color: #9CA3AF; }
+        @media (max-width: 480px) {
+          .login-card {
+            padding: 20px 16px !important;
+            border-radius: 24px !important;
+          }
+          .login-logo {
+            width: 180px !important;
+          }
+        }
       `}</style>
     </div>
   );

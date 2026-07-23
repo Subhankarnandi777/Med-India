@@ -135,36 +135,37 @@ export default function PatientDashboard() {
       )}
 
       {/* Top Header */}
-      <header style={{ background: 'white', padding: '0.875rem 4%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 30, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', gap: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+      <header className="patient-header" style={{ background: 'white', padding: '0.875rem 4%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 30, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'nowrap' }}>
           {/* Logo */}
-          <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={() => setTab('home')}>
+          <div style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer', flexShrink: 0 }} onClick={() => setTab('home')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <span style={{ color: '#F27C08', fontWeight: '900', fontSize: '26px', letterSpacing: '-0.5px' }}>Med</span>
-              <span style={{ color: '#1B8A43', fontWeight: '900', fontSize: '26px', letterSpacing: '-0.5px' }}>India</span>
+              <span style={{ color: '#F27C08', fontWeight: '900', fontSize: '24px', letterSpacing: '-0.5px' }}>Med</span>
+              <span style={{ color: '#1B8A43', fontWeight: '900', fontSize: '24px', letterSpacing: '-0.5px' }}>India</span>
             </div>
-            <span style={{ fontSize: '10px', color: '#6B7280', fontWeight: '600' }}>Medicine Delivered, Care Delivered</span>
+            <span style={{ fontSize: '9px', color: '#6B7280', fontWeight: '600' }} className="hide-on-mobile">Medicine Delivered, Care Delivered</span>
           </div>
 
           {/* Deliver To Selector */}
           <div 
             onClick={() => setShowAddressModal(true)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#ECFDF5', padding: '0.4rem 1rem', borderRadius: '25px', border: '1px solid #D1FAE5', cursor: 'pointer', transition: 'all 0.2s' }}
+            className="header-deliver-pill"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#ECFDF5', padding: '0.4rem 0.8rem', borderRadius: '25px', border: '1px solid #D1FAE5', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
           >
-            <MapPin size={18} color="#1B8A43" />
+            <MapPin size={16} color="#1B8A43" />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '10px', color: '#6B7280', lineHeight: 1 }}>Deliver to</span>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#111827', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                {deliveryAddress} <ChevronDown size={14} color="#6B7280" />
+              <span style={{ fontSize: '9px', color: '#6B7280', lineHeight: 1 }}>Deliver to</span>
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#111827', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                {deliveryAddress.length > 18 ? deliveryAddress.substring(0, 18) + '...' : deliveryAddress} <ChevronDown size={14} color="#6B7280" />
               </span>
             </div>
           </div>
         </div>
 
         {/* Search Bar - Web Centered */}
-        <div style={{ flex: 1, maxWidth: '550px', display: 'flex', gap: '0.5rem' }}>
+        <div className="header-search" style={{ flex: 1, maxWidth: '550px', display: 'flex', gap: '0.5rem' }}>
           <div style={{ flex: 1, position: 'relative' }}>
-            <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: '1rem', color: '#9CA3AF' }}>
+            <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: '0.875rem', color: '#9CA3AF' }}>
               <Search size={18} />
             </div>
             <input 
@@ -175,19 +176,29 @@ export default function PatientDashboard() {
                 setSearchQuery(e.target.value);
                 if (tab !== 'medicines' && e.target.value.length > 0) setTab('medicines');
               }}
-              style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.75rem', borderRadius: '12px', border: '1.5px solid #E5E7EB', fontSize: '14px', background: '#F9FAFB', outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '0.65rem 0.875rem 0.65rem 2.5rem', borderRadius: '12px', border: '1.5px solid #E5E7EB', fontSize: '13px', background: '#F9FAFB', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
           <button 
             onClick={() => setTab('medicines')}
-            style={{ padding: '0 0.875rem', borderRadius: '12px', border: '1.5px solid #E5E7EB', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            style={{ padding: '0 0.75rem', borderRadius: '12px', border: '1.5px solid #E5E7EB', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           >
             <ListFilter size={18} color="#111827" />
           </button>
         </div>
 
         {/* Header Right Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <div className="header-right-actions" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'home' ? '#1B8A43' : '#4B5563' }} onClick={() => setTab('home')}>
+            <Home size={22} />
+            <span style={{ fontSize: '11px', fontWeight: '600', marginTop: '2px' }}>Home</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'medicines' ? '#1B8A43' : '#4B5563' }} onClick={() => setTab('medicines')}>
+            <Pill size={22} />
+            <span style={{ fontSize: '11px', fontWeight: '600', marginTop: '2px' }}>Medicines</span>
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'orders' ? '#1B8A43' : '#4B5563' }} onClick={() => setTab('orders')}>
             <Package size={22} />
             <span style={{ fontSize: '11px', fontWeight: '600', marginTop: '2px' }}>Orders</span>
@@ -217,14 +228,16 @@ export default function PatientDashboard() {
       </header>
 
       {/* Main Content View */}
-      <main style={{ flex: 1, padding: '2rem 4%', maxWidth: '1440px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+      <main style={{ flex: 1, padding: '1.5rem 4%', maxWidth: '1440px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         
         {/* TAB 1: HOME */}
         {tab === 'home' && (
           <div>
             {/* 1. India's Most Trusted App Hero Banner */}
             <div style={{ marginBottom: '2.5rem' }}>
-              <div style={{ 
+              <div 
+                className="patient-hero-banner"
+                style={{ 
                 background: 'linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 50%, #ECFDF5 100%)', 
                 backgroundImage: `url("${bannerImages[currentBannerIdx]}")`,
                 backgroundSize: 'cover',
@@ -233,7 +246,7 @@ export default function PatientDashboard() {
                 padding: '3rem 3.5rem', 
                 position: 'relative', 
                 overflow: 'hidden', 
-                minHeight: '280px', 
+                minHeight: '260px', 
                 boxShadow: '0 10px 25px -5px rgba(0,0,0,0.06)', 
                 display: 'flex', 
                 flexDirection: 'column', 
@@ -248,7 +261,7 @@ export default function PatientDashboard() {
                     100% GENUINE MEDICINES
                   </span>
                   
-                  <h2 style={{ margin: '0.875rem 0 0.5rem 0', fontSize: '38px', fontWeight: '900', color: '#1c355e', lineHeight: 1.1 }}>
+                  <h2 className="patient-hero-title" style={{ margin: '0.875rem 0 0.5rem 0', fontSize: '38px', fontWeight: '900', color: '#1c355e', lineHeight: 1.1 }}>
                     India's Most<br/>
                     <span style={{ color: '#1B8A43' }}>Trusted App</span>
                   </h2>
@@ -281,7 +294,7 @@ export default function PatientDashboard() {
             {/* 2. Quick Actions & Categories */}
             <div style={{ marginBottom: '3rem' }}>
               <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '22px', fontWeight: '800', color: '#111827' }}>Quick Actions & Categories</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1.5rem' }}>
+              <div className="quick-actions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1.5rem' }}>
                 {categories.map((cat, idx) => (
                   <div 
                     key={idx} 
@@ -290,7 +303,7 @@ export default function PatientDashboard() {
                     onMouseOver={e => e.currentTarget.style.transform = 'translateY(-4px)'}
                     onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
                   >
-                    <div style={{ 
+                    <div className="category-circle" style={{ 
                       width: '76px', 
                       height: '76px', 
                       borderRadius: '50%', 
@@ -311,7 +324,7 @@ export default function PatientDashboard() {
 
             {/* 3. Upload Prescription Section */}
             <div style={{ marginBottom: '3.5rem' }}>
-              <div style={{ 
+              <div className="rx-banner" style={{ 
                 background: 'linear-gradient(135deg, #ECFDF5 0%, #FFFFFF 60%, #F0FDF4 100%)', 
                 backgroundImage: 'url("/upload.jpeg")',
                 backgroundSize: 'cover',
@@ -356,7 +369,7 @@ export default function PatientDashboard() {
                 <span style={{ color: '#1B8A43', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }} onClick={() => setTab('medicines')}>View All →</span>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
+              <div className="products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
                 {medicines.slice(0, 8).map((med) => (
                   <div key={med.id} style={{ background: 'white', borderRadius: '20px', padding: '1.25rem', border: '1px solid #E2E8F0', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'box-shadow 0.2s' }}>
                     
@@ -433,7 +446,7 @@ export default function PatientDashboard() {
             </div>
 
             {/* Medicines Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
+            <div className="products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
               {filteredMedicines.map(med => (
                 <div key={med.id} style={{ background: 'white', borderRadius: '20px', padding: '1.5rem', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
@@ -525,7 +538,7 @@ export default function PatientDashboard() {
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+              <div className="cart-layout-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
                 
                 {/* Cart Items List */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -617,41 +630,130 @@ export default function PatientDashboard() {
       {/* Floating Support Button (Bottom Right) */}
       <div 
         onClick={() => setShowSupportModal(true)}
-        style={{ position: 'fixed', bottom: '80px', right: '2rem', width: '60px', height: '60px', background: '#F27C08', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 25px -5px rgba(242, 124, 8, 0.5)', zIndex: 40, cursor: 'pointer', transition: 'transform 0.2s' }}
+        className="floating-support-btn"
+        style={{ position: 'fixed', bottom: '80px', right: '2rem', width: '56px', height: '56px', background: '#F27C08', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 25px -5px rgba(242, 124, 8, 0.4)', zIndex: 40, cursor: 'pointer', transition: 'transform 0.2s' }}
         onMouseOver={e => e.currentTarget.style.transform = 'scale(1.08)'}
         onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
       >
-        <PhoneCall size={26} color="white" />
+        <PhoneCall size={24} color="white" />
       </div>
 
       {/* Bottom Mobile Navigation Bar */}
-      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: '1px solid #E2E8F0', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-around', alignItems: 'center', zIndex: 50, boxShadow: '0 -4px 10px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'home' ? '#1B8A43' : '#6B7280' }} onClick={() => setTab('home')}>
+      <nav className="patient-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '1px solid #E2E8F0', padding: '0.4rem 0.5rem', display: 'flex', justifyContent: 'space-around', alignItems: 'center', zIndex: 50, boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'home' ? '#1B8A43' : '#6B7280', padding: '4px 12px', borderRadius: '12px', background: tab === 'home' ? '#ECFDF5' : 'transparent', transition: 'all 0.2s' }} onClick={() => setTab('home')}>
           <Home size={20} />
-          <span style={{ fontSize: '11px', fontWeight: tab === 'home' ? '700' : '500', marginTop: '2px' }}>Home</span>
+          <span style={{ fontSize: '10px', fontWeight: tab === 'home' ? '700' : '500', marginTop: '2px' }}>Home</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'medicines' ? '#1B8A43' : '#6B7280' }} onClick={() => setTab('medicines')}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'medicines' ? '#1B8A43' : '#6B7280', padding: '4px 12px', borderRadius: '12px', background: tab === 'medicines' ? '#ECFDF5' : 'transparent', transition: 'all 0.2s' }} onClick={() => setTab('medicines')}>
           <Search size={20} />
-          <span style={{ fontSize: '11px', fontWeight: tab === 'medicines' ? '700' : '500', marginTop: '2px' }}>Medicines</span>
+          <span style={{ fontSize: '10px', fontWeight: tab === 'medicines' ? '700' : '500', marginTop: '2px' }}>Medicines</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'orders' ? '#1B8A43' : '#6B7280' }} onClick={() => setTab('orders')}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'orders' ? '#1B8A43' : '#6B7280', padding: '4px 12px', borderRadius: '12px', background: tab === 'orders' ? '#ECFDF5' : 'transparent', transition: 'all 0.2s' }} onClick={() => setTab('orders')}>
           <ListFilter size={20} />
-          <span style={{ fontSize: '11px', fontWeight: tab === 'orders' ? '700' : '500', marginTop: '2px' }}>Orders</span>
+          <span style={{ fontSize: '10px', fontWeight: tab === 'orders' ? '700' : '500', marginTop: '2px' }}>Orders</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'cart' ? '#1B8A43' : '#6B7280', position: 'relative' }} onClick={() => setTab('cart')}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'cart' ? '#1B8A43' : '#6B7280', padding: '4px 12px', borderRadius: '12px', background: tab === 'cart' ? '#ECFDF5' : 'transparent', position: 'relative', transition: 'all 0.2s' }} onClick={() => setTab('cart')}>
           <ShoppingCart size={20} />
           {cartItemCount > 0 && (
-            <div style={{ position: 'absolute', top: -4, right: 2, background: '#F27C08', color: 'white', fontSize: '9px', fontWeight: '800', width: '14px', height: '14px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', top: -2, right: 6, background: '#F27C08', color: 'white', fontSize: '9px', fontWeight: '800', width: '15px', height: '15px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {cartItemCount}
             </div>
           )}
-          <span style={{ fontSize: '11px', fontWeight: tab === 'cart' ? '700' : '500', marginTop: '2px' }}>Cart</span>
+          <span style={{ fontSize: '10px', fontWeight: tab === 'cart' ? '700' : '500', marginTop: '2px' }}>Cart</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'account' ? '#1B8A43' : '#6B7280' }} onClick={() => setTab('account')}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: tab === 'account' ? '#1B8A43' : '#6B7280', padding: '4px 12px', borderRadius: '12px', background: tab === 'account' ? '#ECFDF5' : 'transparent', transition: 'all 0.2s' }} onClick={() => setTab('account')}>
           <User size={20} />
-          <span style={{ fontSize: '11px', fontWeight: tab === 'account' ? '700' : '500', marginTop: '2px' }}>Account</span>
+          <span style={{ fontSize: '10px', fontWeight: tab === 'account' ? '700' : '500', marginTop: '2px' }}>Account</span>
         </div>
       </nav>
+
+      <style>{`
+        /* Hide all scrollbars on mobile & web elements strictly */
+        * {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+        *::-webkit-scrollbar, *::-webkit-scrollbar-thumb, *::-webkit-scrollbar-track {
+          display: none !important;
+          width: 0px !important;
+          height: 0px !important;
+          background: transparent !important;
+        }
+
+        @media (max-width: 768px) {
+          main {
+            padding: 1rem 0.75rem 95px 0.75rem !important;
+          }
+          .patient-header {
+            padding: 0.75rem 0.875rem !important;
+            flex-wrap: wrap !important;
+            gap: 0.5rem !important;
+          }
+          .header-search {
+            order: 3 !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
+          }
+          .header-search button {
+            width: 42px !important;
+            height: 42px !important;
+            flex-shrink: 0 !important;
+          }
+          .header-right-actions {
+            display: none !important;
+          }
+          .patient-hero-banner {
+            padding: 1.25rem 1rem !important;
+            min-height: 170px !important;
+            border-radius: 18px !important;
+          }
+          .patient-hero-title {
+            font-size: 20px !important;
+          }
+          .rx-banner {
+            padding: 1.25rem 1rem !important;
+            border-radius: 18px !important;
+          }
+          .quick-actions-grid {
+            display: flex !important;
+            gap: 0.875rem !important;
+            overflow-x: auto !important;
+            padding-bottom: 0.5rem !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+          .quick-actions-grid > div {
+            flex: 0 0 auto !important;
+            width: 70px !important;
+          }
+          .category-circle {
+            width: 58px !important;
+            height: 58px !important;
+          }
+          .products-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.75rem !important;
+          }
+          .cart-layout-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .floating-support-btn {
+            bottom: 72px !important;
+            right: 0.875rem !important;
+            width: 46px !important;
+            height: 46px !important;
+          }
+          .modal-content {
+            padding: 1.25rem !important;
+            max-width: 92vw !important;
+            border-radius: 20px !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .patient-bottom-nav {
+            display: none !important;
+          }
+        }
+      `}</style>
 
       {/* MODAL 1: Upload Prescription */}
       {showRxModal && (

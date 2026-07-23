@@ -103,7 +103,9 @@ export default function Register() {
 
 
       {/* Form Panel */}
-      <div style={{
+      <div
+        className="register-card"
+        style={{
         width: "100%",
         maxWidth: "450px",
 
@@ -418,7 +420,7 @@ export default function Register() {
         
         .brand-logo {
            max-width: 300px;
-            margin-bottom: 1rem;
+           margin-bottom: 1rem;
         }
         
         @media (max-width: 900px) {
@@ -430,6 +432,16 @@ export default function Register() {
           .brand-logo {
             max-width: 300px;
             margin-bottom: 1rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .register-layout {
+            padding: 1.5rem 0.75rem !important;
+          }
+          .register-card {
+            padding: 20px 16px !important;
+            border-radius: 24px !important;
           }
         }
       `}</style>
