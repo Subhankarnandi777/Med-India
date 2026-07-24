@@ -1,159 +1,186 @@
--- 1. Create a table for user profiles (synced from Neon Auth / Better Auth)
-create table if not exists public.profiles (
-  id text primary key,
-  email text,
-  full_name text,
-  role text, -- 'Patient', 'Seller', 'Doctor'
-  mobile text,
-  extra_details jsonb, -- address, GST number, specialization, reg council etc.
+-- ============================================================================
+-- 0. NEON AUTH SCHEMA (Custom Authentication)
+-- ============================================================================
+create schema if not exists neon_auth;
+
+create extension if not exists pgcrypto;
+
+create table if not exists neon_auth.users (
+  id uuid primary key default gen_random_uuid(),
+  email text unique not null,
+  encrypted_password text not null,
+  role text check (role in ('Patient', 'Seller', 'Doctor', 'Admin')),
+  email_confirmed_at timestamp with time zone,
+  last_sign_in_at timestamp with time zone,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+create table if not exists neon_auth.sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references neon_auth.users(id) on delete cascade,
+  refresh_token text not null,
+  user_agent text,
+  ip_address text,
+  expires_at timestamp with time zone not null,
   created_at timestamp with time zone default now()
 );
 
--- Enable RLS on profiles
-alter table public.profiles enable row level security;
-
--- Policies for profiles
-drop policy if exists "Profiles are viewable by everyone" on public.profiles;
-create policy "Profiles are viewable by everyone" on public.profiles
-  for select using (true);
-
-drop policy if exists "Anyone can insert profiles" on public.profiles;
-create policy "Anyone can insert profiles" on public.profiles
-  for insert with check (true);
-
-drop policy if exists "Users can update their own profile" on public.profiles;
-create policy "Users can update their own profile" on public.profiles
-  for update using (true);
+create table if not exists neon_auth.identities (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references neon_auth.users(id) on delete cascade,
+  provider text not null,
+  provider_id text not null,
+  created_at timestamp with time zone default now(),
+  unique(provider, provider_id)
+);
 
 
--- 2. Create medicines catalog table
+-- ============================================================================
+-- 1. PUBLIC SCHEMA: Role Tables
+-- ============================================================================
+create table if not exists public.patients (
+  id uuid primary key references neon_auth.users(id) on delete cascade,
+  full_name text not null,
+  mobile text,
+  address jsonb,
+  status text not null default 'general' check (status in ('premium', 'general')),
+  created_at timestamp with time zone default now()
+);
+
+alter table public.patients enable row level security;
+drop policy if exists "Patients are viewable by everyone" on public.patients;
+create policy "Patients are viewable by everyone" on public.patients for select using (true);
+drop policy if exists "Anyone can insert patients" on public.patients;
+create policy "Anyone can insert patients" on public.patients for insert with check (true);
+drop policy if exists "Patients can update their own profile" on public.patients;
+create policy "Patients can update their own profile" on public.patients for update using (true);
+
+create table if not exists public.sellers (
+  id uuid primary key references neon_auth.users(id) on delete cascade,
+  business_name text not null,
+  contact_person text,
+  gst_number text,
+  mobile text,
+  address jsonb,
+  status text not null default 'general' check (status in ('premium', 'general')),
+  created_at timestamp with time zone default now()
+);
+
+alter table public.sellers enable row level security;
+drop policy if exists "Sellers are viewable by everyone" on public.sellers;
+create policy "Sellers are viewable by everyone" on public.sellers for select using (true);
+drop policy if exists "Anyone can insert sellers" on public.sellers;
+create policy "Anyone can insert sellers" on public.sellers for insert with check (true);
+drop policy if exists "Sellers can update their own profile" on public.sellers;
+create policy "Sellers can update their own profile" on public.sellers for update using (true);
+
+create table if not exists public.doctors (
+  id uuid primary key references neon_auth.users(id) on delete cascade,
+  full_name text not null,
+  specialization text,
+  license_number text,
+  mobile text,
+  created_at timestamp with time zone default now()
+);
+
+alter table public.doctors enable row level security;
+drop policy if exists "Doctors are viewable by everyone" on public.doctors;
+create policy "Doctors are viewable by everyone" on public.doctors for select using (true);
+drop policy if exists "Anyone can insert doctors" on public.doctors;
+create policy "Anyone can insert doctors" on public.doctors for insert with check (true);
+drop policy if exists "Doctors can update their own profile" on public.doctors;
+create policy "Doctors can update their own profile" on public.doctors for update using (true);
+
+
+-- ============================================================================
+-- 2. MEDICINES CATALOG
+-- ============================================================================
 create table if not exists public.medicines (
   id bigint generated by default as identity primary key,
+  seller_id uuid references public.sellers(id) on delete cascade,
   name text not null,
   generic_name text not null,
-  price double precision not null,
-  stock integer not null,
+  price double precision not null check (price >= 0),
+  stock integer not null check (stock >= 0),
   category text not null,
   requires_prescription boolean not null default false,
   created_at timestamp with time zone default now()
 );
 
--- Enable RLS on medicines
 alter table public.medicines enable row level security;
-
--- Policies for medicines
 drop policy if exists "Medicines are viewable by everyone" on public.medicines;
-create policy "Medicines are viewable by everyone" on public.medicines
-  for select using (true);
-
+create policy "Medicines are viewable by everyone" on public.medicines for select using (true);
 drop policy if exists "Anyone can insert medicines" on public.medicines;
-create policy "Anyone can insert medicines" on public.medicines
-  for insert with check (true);
-
+create policy "Anyone can insert medicines" on public.medicines for insert with check (true);
 drop policy if exists "Anyone can update medicines" on public.medicines;
-create policy "Anyone can update medicines" on public.medicines
-  for update using (true);
-
+create policy "Anyone can update medicines" on public.medicines for update using (true);
 drop policy if exists "Anyone can delete medicines" on public.medicines;
-create policy "Anyone can delete medicines" on public.medicines
-  for delete using (true);
+create policy "Anyone can delete medicines" on public.medicines for delete using (true);
 
 
--- 3. Create orders table
+-- ============================================================================
+-- 3. ORDERS TABLE
+-- ============================================================================
 create table if not exists public.orders (
-  id text primary key,
-  patient_id text,
-  patient_name text not null,
-  items jsonb not null, -- Array of OrderItem: name, quantity, price
-  status text not null, -- Pending, Accepted, Packed, OutForDelivery, Delivered, Declined
+  id uuid primary key default gen_random_uuid(),
+  patient_id uuid references public.patients(id) on delete set null,
+  items jsonb not null, 
+  total_amount double precision not null check (total_amount >= 0),
+  status text not null check (status in ('Pending', 'Accepted', 'Packed', 'OutForDelivery', 'Delivered', 'Declined')),
   prescription_url text,
   created_at timestamp with time zone default now()
 );
 
--- Enable RLS on orders
 alter table public.orders enable row level security;
-
--- Policies for orders
 drop policy if exists "Anyone can view orders" on public.orders;
-create policy "Anyone can view orders" on public.orders
-  for select using (true);
-
+create policy "Anyone can view orders" on public.orders for select using (true);
 drop policy if exists "Anyone can insert orders" on public.orders;
-create policy "Anyone can insert orders" on public.orders
-  for insert with check (true);
-
+create policy "Anyone can insert orders" on public.orders for insert with check (true);
 drop policy if exists "Anyone can update orders" on public.orders;
-create policy "Anyone can update orders" on public.orders
-  for update using (true);
+create policy "Anyone can update orders" on public.orders for update using (true);
 
 
--- 4. Create payouts table
+-- ============================================================================
+-- 4. PAYOUTS TABLE
+-- ============================================================================
 create table if not exists public.payouts (
-  id text primary key,
-  amount double precision not null,
-  status text not null, -- Settled, Pending
+  id uuid primary key default gen_random_uuid(),
+  seller_id uuid references public.sellers(id) on delete cascade,
+  amount double precision not null check (amount >= 0),
+  status text not null check (status in ('Pending', 'Settled', 'Failed')),
   created_at timestamp with time zone default now()
 );
 
--- Enable RLS on payouts
 alter table public.payouts enable row level security;
-
--- Policies for payouts
 drop policy if exists "Anyone can view payouts" on public.payouts;
-create policy "Anyone can view payouts" on public.payouts
-  for select using (true);
-
+create policy "Anyone can view payouts" on public.payouts for select using (true);
 drop policy if exists "Anyone can insert payouts" on public.payouts;
-create policy "Anyone can insert payouts" on public.payouts
-  for insert with check (true);
+create policy "Anyone can insert payouts" on public.payouts for insert with check (true);
 
 
--- 5. Create prescriptions table
+-- ============================================================================
+-- 5. PRESCRIPTIONS TABLE
+-- ============================================================================
 create table if not exists public.prescriptions (
-  id text primary key,
-  patient_name text not null,
-  doctor_name text not null,
-  medicines jsonb not null, -- Array of OrderItem: name, quantity, price
+  id uuid primary key default gen_random_uuid(),
+  patient_id uuid references public.patients(id) on delete cascade,
+  doctor_id uuid references public.doctors(id) on delete set null,
+  medicines jsonb not null, 
   instructions text,
   created_at timestamp with time zone default now()
 );
 
--- Enable RLS on prescriptions
 alter table public.prescriptions enable row level security;
-
--- Policies for prescriptions
 drop policy if exists "Anyone can view prescriptions" on public.prescriptions;
-create policy "Anyone can view prescriptions" on public.prescriptions
-  for select using (true);
-
+create policy "Anyone can view prescriptions" on public.prescriptions for select using (true);
 drop policy if exists "Anyone can insert prescriptions" on public.prescriptions;
-create policy "Anyone can insert prescriptions" on public.prescriptions
-  for insert with check (true);
+create policy "Anyone can insert prescriptions" on public.prescriptions for insert with check (true);
 
 
--- 6. Insert initial seed data for medicines
-insert into public.medicines (name, generic_name, price, stock, category, requires_prescription)
-values 
-  ('Paracetamol 500mg', 'Acetaminophen', 45.0, 150, 'Analgesic', false),
-  ('Amoxicillin 250mg', 'Amoxicillin', 120.0, 80, 'Antibiotic', true),
-  ('Atorvastatin 10mg', 'Atorvastatin', 240.0, 4, 'Cardiovascular', true),
-  ('Metformin 500mg', 'Metformin', 85.0, 120, 'Antidiabetic', true),
-  ('Cetirizine 10mg', 'Cetirizine', 30.0, 200, 'Antihistamine', false),
-  ('Ibuprofen 400mg', 'Ibuprofen', 55.0, 0, 'Analgesic', false),
-  ('Daily Multivitamins', 'Multivitamins & Minerals', 499.0, 50, 'Wellness', false),
-  ('Ashwagandha Forte', 'Ashwagandha Extract', 320.0, 35, 'Ayurveda', false)
-on conflict do nothing;
-
--- 7. Insert initial seed data for payouts
-insert into public.payouts (id, amount, status, created_at)
-values 
-  ('TXN-3912', 2450.0, 'Settled', now() - interval '3 days'),
-  ('TXN-3881', 1890.0, 'Settled', now() - interval '5 days'),
-  ('TXN-3710', 4120.0, 'Settled', now() - interval '8 days')
-on conflict do nothing;
-
-
--- 8. Grant access to schema and tables for Neon Auth roles
+-- ============================================================================
+-- 6. GRANT PRIVILEGES
+-- ============================================================================
 grant usage on schema public to anonymous, authenticated;
 grant all privileges on all tables in schema public to anonymous, authenticated;
 grant all privileges on all sequences in schema public to anonymous, authenticated;

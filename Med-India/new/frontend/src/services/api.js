@@ -34,6 +34,25 @@ export { getProfile };
 export { updateProfile };
 export { getToken };
 
+export async function updateBackendProfile(profileData) {
+  const res = await fetch(`${API_URL}/auth/profile`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(profileData),
+  });
+  if (!res.ok) throw new Error("Failed to update profile");
+  return res.json();
+}
+
+export async function fetchBackendProfile(userId, email) {
+  const params = new URLSearchParams();
+  if (userId) params.append("user_id", userId);
+  if (email) params.append("email", email);
+  const res = await fetch(`${API_URL}/auth/profile?${params.toString()}`);
+  if (!res.ok) throw new Error("Failed to fetch profile");
+  return res.json();
+}
+
 // ---------- EXISTING BACKEND APIs ----------
 
 export async function fetchMedicines() {
