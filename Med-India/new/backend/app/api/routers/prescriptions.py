@@ -1,64 +1,65 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from sqlalchemy.orm import Session
 from typing import List
 import datetime
-import random
-from sqlalchemy.orm import Session
-from app.schemas import Prescription, PrescriptionCreate, OrderItem
-from app.db import models
+import uuid
+import os
+import shutil
+from app.schemas import Prescription, PrescriptionCreate
+from app.db.mock_db import mock_prescriptions
 from app.db.database import get_db
+from app.db.models import PrescriptionUpload
 
 router = APIRouter()
 
 @router.get("/", response_model=List[Prescription])
-def get_prescriptions(db: Session = Depends(get_db)):
-    db_prescriptions = db.query(models.Prescription).all()
-    result = []
-    for rx in db_prescriptions:
-        items = [
-            OrderItem(name=item["name"], quantity=item["quantity"], price=item["price"])
-            for item in (rx.medicines or [])
-        ]
-        result.append(Prescription(
-            id=rx.id,
-            patientName=rx.patient_name,
-            doctorName=rx.doctor_name,
-            medicines=items,
-            createdAt=rx.created_at.isoformat().replace("+00:00", "Z") if rx.created_at else "",
-            instructions=rx.instructions or ""
-        ))
-    return result
+def get_prescriptions():
+    return mock_prescriptions
 
 @router.post("/", response_model=Prescription)
-def create_prescription(req: PrescriptionCreate, db: Session = Depends(get_db)):
-    new_id = f"RX-{random.randint(1000, 9999)}"
-    while db.query(models.Prescription).filter(models.Prescription.id == new_id).first():
-        new_id = f"RX-{random.randint(1000, 9999)}"
+def create_prescription(req: PrescriptionCreate):
+    prescription = {
+        "id": f"RX-{len(mock_prescriptions)+1000}",
+        "patientName": req.patientName,
+        "doctorName": req.doctorName,
+        "medicines": [item.dict() for item in req.medicines],
+        "createdAt": datetime.datetime.utcnow().isoformat() + "Z",
+        "instructions": req.instructions
+    }
+    mock_prescriptions.append(prescription)
+    return prescription
 
-    now = datetime.datetime.utcnow()
-    items_json = [item.dict() for item in req.medicines]
-
-    db_rx = models.Prescription(
-        id=new_id,
-        patient_name=req.patientName,
-        doctor_name=req.doctorName,
-        medicines=items_json,
-        instructions=req.instructions,
-        created_at=now
+@router.post("/upload")
+async def upload_prescription(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    file_ext = file.filename.split(".")[-1]
+    file_id = str(uuid.uuid4())
+    file_name = f"{file_id}.{file_ext}"
+    file_path = os.path.join("uploads", "prescriptions", file_name)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    db_upload = PrescriptionUpload(
+        id=uuid.UUID(file_id),
+        file_path=f"/uploads/prescriptions/{file_name}",
+        status="VERIFIED", # Auto verify for demo purposes
+        uploaded_at=datetime.datetime.utcnow()
     )
-    db.add(db_rx)
-    db.commit()
-    db.refresh(db_rx)
-
-    items = [
-        OrderItem(name=item["name"], quantity=item["quantity"], price=item["price"])
-        for item in (db_rx.medicines or [])
-    ]
-    return Prescription(
-        id=db_rx.id,
-        patientName=db_rx.patient_name,
-        doctorName=db_rx.doctor_name,
-        medicines=items,
-        createdAt=db_rx.created_at.isoformat().replace("+00:00", "Z") if db_rx.created_at else "",
-        instructions=db_rx.instructions or ""
-    )
-
+    
+    db.add(db_upload)
+    try:
+        db.commit()
+        db.refresh(db_upload)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+        
+    return {
+        "id": str(db_upload.id),
+        "file_path": db_upload.file_path,
+        "status": db_upload.status,
+        "message": "Prescription uploaded successfully"
+    }

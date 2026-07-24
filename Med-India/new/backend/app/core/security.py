@@ -1,24 +1,43 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
+import bcrypt
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models import User
+from datetime import datetime, timedelta
+import os
 
 security_scheme = HTTPBearer(auto_error=False)
+
+SECRET_KEY = os.getenv("JWT_SECRET", "medindia-super-secret-key-change-in-prod")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except ValueError:
+        return False
+
+def get_password_hash(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
 
 def decode_token(token: str) -> dict:
     """
     Decodes the Neon Auth JWT token.
     Reads payload claims (sub/user_id, email, etc.)
     """
-    if not token or token in ("null", "undefined", ""):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing or empty authentication token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
     try:
+        # Decode without signature verification or verify using algorithm RS256/HS256
         payload = jwt.decode(token, options={"verify_signature": False})
         return payload
     except Exception as e:
@@ -28,33 +47,22 @@ def decode_token(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-from fastapi import Request
-
 def get_current_user(
-    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
     db: Session = Depends(get_db)
 ):
-    token = credentials.credentials if credentials else None
-    
-    user_id = request.headers.get("x-user-id")
-    email = request.headers.get("x-user-email")
-    payload = {}
-    
-    if not user_id and token:
-        try:
-            payload = decode_token(token)
-            user_id = payload.get("sub") or payload.get("id") or payload.get("user_id")
-            email = payload.get("email") or payload.get("user", {}).get("email") if isinstance(payload.get("user"), dict) else None
-        except Exception:
-            pass
-            
-    if not user_id:
+    if not credentials or not credentials.credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing Authorization header or invalid token",
+            detail="Missing Authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    token = credentials.credentials
+    payload = decode_token(token)
+    
+    user_id = payload.get("sub") or payload.get("id") or payload.get("user_id")
+    email = payload.get("email")
     
     user = None
     if user_id:

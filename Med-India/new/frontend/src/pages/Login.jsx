@@ -1,90 +1,26 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { login, verifyOtp, resendOtp } from '../services/api';
-import { Mail, Lock, Info, ArrowRight, Apple, CheckSquare, Square, KeyRound } from 'lucide-react';
+import { login } from '../services/api';
+import { Mail, Lock, Info, ArrowRight, Apple, CheckSquare, Square } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Patient');
   const [rememberMe, setRememberMe] = useState(true);
-  const [requiresOtp, setRequiresOtp] = useState(false);
-  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const { login: authenticate } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
     try {
-      const data = await login(email, password, role);
-
-      if (data && (data.token || data.success)) {
-        const userRole = data.user?.role;
-        
-        // Strict Role Match Check: Reject login if user role does not match selected tab
-        if (userRole && userRole !== role) {
-          setError(`Access Denied`);
-          return;
-        }
-
-        authenticate(
-          {
-            id: data.user?.id || 'user-' + Date.now(),
-            email: data.user?.email || email,
-            role: userRole || role,
-            name: data.user?.full_name || data.user?.name || email.split('@')[0],
-          },
-          data.token || ''
-        );
-
-        navigate("/");
-      } else {
-        setError('Invalid credentials');
-      }
+      const data = await login(email, password);
+      authenticate(data.user, data.token);
+      navigate('/');
     } catch (err) {
-      if (err.code === 'EMAIL_NOT_VERIFIED') {
-        setRequiresOtp(true);
-        try {
-          await resendOtp(email);
-        } catch {}
-        setError('Your email is not verified yet. A 6-digit OTP code has been sent to your email. Please enter it below:');
-      } else {
-        const msg = err.message === 'Failed to fetch' ? 'Unable to connect to authentication server. Please try again.' : (err.message || 'Invalid credentials');
-        setError(msg);
-      }
-    }
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const result = await verifyOtp(email, otp);
-      if (result && result.success) {
-        const userRole = result.user?.role;
-
-        // Strict Role Match Check
-        if (userRole && userRole !== role) {
-          setError(`Access Denied`);
-          return;
-        }
-
-        authenticate(
-          {
-            id: result.user?.id || 'user-' + Date.now(),
-            email: result.user?.email || email,
-            role: userRole || role,
-            name: result.user?.full_name || email.split('@')[0],
-          },
-          result.token || ''
-        );
-        navigate('/');
-      }
-    } catch (err) {
-      setError(err.message || 'OTP verification failed');
+      setError('Invalid credentials');
     }
   };
 
@@ -96,7 +32,7 @@ export default function Login() {
       flexDirection: 'column',
       minHeight: '100vh',
       fontFamily: "'Inter', sans-serif",
-      backgroundImage: "url('/bg-login.png')",
+      backgroundImage: "url('/bg-login.jpeg')",
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -106,97 +42,27 @@ export default function Login() {
       padding: '2rem 1rem'
     }}>
       {/* Logo outside the card at the top */}
-      <div style={{ marginBottom: '-2rem', marginTop: '-3.5rem' }}>
-    <img
-        src="/logoo.png"
-        alt="Med India Logo"
-        className="login-logo"
-        style={{
-            width: '240px',
-            mixBlendMode: 'multiply',
-            display: 'block'
-        }}
-    />
-</div>
+      <div style={{ marginBottom: '1.5rem', marginTop: '-2rem' }}>
+        <img src="/logo.jpeg" alt="Med India Logo" style={{ width: '180px', mixBlendMode: 'multiply' }} />
+      </div>
 
       {/* Glassmorphism Card */}
-      <div
-  className="login-card"
-  style={{
-    width: "100%",
-    maxWidth: "450px",
-
-    border: "1.5px solid #4F5FA8",
-    borderRadius: "34px",
-
-    padding: "30px",
-
-    background: "rgba(255,255,255,0.18)",
-    backdropFilter: "blur(2px)",
-    WebkitBackdropFilter: "blur(5px)",
-
-    boxSizing: "border-box",
-  }}
->
+      <div style={{
+        width: '100%',
+        maxWidth: '450px',
+        background: 'rgba(240, 248, 255, 0.75)', // Light blue glass tint
+        backdropFilter: 'blur(16px)',
+        borderRadius: '24px',
+        border: '1.5px solid rgba(27, 138, 67, 0.4)',
+        padding: '2rem',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)'
+      }}>
         {error && <div style={{ background: '#FEE2E2', color: '#B91C1C', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', textAlign: 'center' }}>{error}</div>}
 
-        {requiresOtp ? (
-          <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1B8A43', fontWeight: '700', fontSize: '14px', marginBottom: '0.5rem' }}>
-                <KeyRound size={16} strokeWidth={2.5} /> Verification OTP
-              </div>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: '1rem', color: '#9CA3AF' }}><KeyRound size={18} /></div>
-                <input
-                  type="text"
-                  placeholder="Enter 6-digit OTP"
-                  style={{ ...inputStyle, fontSize: '18px', letterSpacing: '3px', textAlign: 'center' }}
-                  value={otp}
-                  onChange={e => setOtp(e.target.value)}
-                  maxLength={6}
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ padding: "2px", borderRadius: "22px", background: "linear-gradient(135deg, #F27C08 0%, #F2A700 30%, #38B64A 70%, #1B8A43 100%)" }}>
-              <button
-                type="submit"
-                style={{
-                  width: "100%",
-                  padding: "0.75rem",
-                  background: "#111827",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "16px",
-                  fontWeight: "700",
-                  fontSize: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "1rem",
-                  cursor: "pointer",
-                }}
-              >
-                Verify OTP & Sign In
-                <ArrowRight size={20} color="white" />
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setRequiresOtp(false)}
-              style={{ background: 'none', border: 'none', color: '#6B7280', fontWeight: '600', cursor: 'pointer', textAlign: 'center' }}
-            >
-              Back to Login
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
           {/* Segmented Role Selector */}
-          <div style={{ display: 'flex', border: '2.5px solid #F27C08', borderRadius: '12px', overflow: 'hidden', background: '#fff', padding: '4px' }}>
+          <div style={{ display: 'flex', border: '1.5px solid #F27C08', borderRadius: '12px', overflow: 'hidden', background: '#fff', padding: '4px' }}>
             {roles.map((r) => (
               <div 
                 key={r}
@@ -254,64 +120,32 @@ export default function Login() {
           </div>
 
           {/* Sign In Button */}
- <div
-  style={{
-    marginTop: "0.5rem",
-    padding: "2px",
-    borderRadius: "22px",
-    background:
-      "linear-gradient(135deg, #F27C08 0%, #F2A700 30%, #38B64A 70%, #1B8A43 100%)",
-  }}
->
-  <button
-    type="submit"
-    style={{
-      width: "100%",
-      padding: "0.5rem",
-
-      background: "#111827",
-      color: "#fff",
-
-      border: "none",
-      borderRadius: "16px",
-
-      fontWeight: "700",
-      fontSize: "16px",
-
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "1rem",
-
-      cursor: "pointer",
-      transition: "transform .1s ease",
-    }}
-    onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-    onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-  >
-    Sign In
-
-    <div
-      style={{
-        width: "40px",
-        height: "40px",
-        borderRadius: "50%",
-        background: "#3E3E3E",
-
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-
-        flexShrink: 0,
-      }}
-    >
-      <ArrowRight size={20} color="white" />
-    </div>
-  </button>
-</div>
+          <button 
+            type="submit" 
+            style={{ 
+              width: '100%',
+              padding: '1rem',
+              background: '#111827',
+              color: 'white',
+              border: 'none',
+              borderRadius: '16px',
+              fontWeight: '700',
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '1rem',
+              cursor: 'pointer',
+              boxShadow: '0 0 0 2px #F27C08',
+              marginTop: '0.5rem'
+            }}
+          >
+            Sign In
+            <div style={{ background: '#374151', borderRadius: '50%', padding: '4px', display: 'flex' }}>
+              <ArrowRight size={16} color="white" />
+            </div>
+          </button>
         </form>
-        )}
         
         {/* Or continue with */}
         <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
@@ -341,15 +175,6 @@ export default function Login() {
       <style>{`
         input:focus { border-color: #1B8A43 !important; outline: none !important; box-shadow: 0 0 0 3px rgba(27, 138, 67, 0.1) !important; }
         input::placeholder { color: #9CA3AF; }
-        @media (max-width: 480px) {
-          .login-card {
-            padding: 20px 16px !important;
-            border-radius: 24px !important;
-          }
-          .login-logo {
-            width: 180px !important;
-          }
-        }
       `}</style>
     </div>
   );

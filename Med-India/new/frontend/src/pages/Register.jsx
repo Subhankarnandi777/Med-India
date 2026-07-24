@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { register, verifyOtp, resendOtp } from '../services/api';
-import { User, Phone, Mail, Star, MapPin, Lock, Info, ArrowRight, ShoppingCart, KeyRound } from 'lucide-react';
+import { register } from '../services/api';
+import { User, Phone, Mail, Star, MapPin, Lock, Info, ArrowRight, ShoppingCart } from 'lucide-react';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -11,76 +10,28 @@ export default function Register() {
     shopName: '', drugLicense: '', // for seller
     specialization: '', medicalRegNo: '' // for doctor
   });
-  const [step, setStep] = useState('register'); // 'register' or 'otp'
-  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const { login: authenticate } = useAuth();
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError('');
-    setMessage('');
-
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
-
     try {
-      const result = await register({
+      const data = await register({
+        name: formData.name,
         email: formData.email,
         password: formData.password,
-        fullName: formData.name,
         role: formData.role,
-        mobile: formData.mobile,
-        address: formData.address,
-        shopName: formData.shopName,
-        licenseNumber: formData.drugLicense,
-        specialty: formData.specialization,
-        docLicenseId: formData.medicalRegNo,
+        mobile: formData.mobile
       });
-
-      setStep('otp');
-      setMessage('A 6-digit verification code has been sent to your email. Please enter it below to complete registration.');
+      setMessage(data.message || 'Registration successful. You can now login.');
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(err.message || 'Registration failed');
-    }
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setError('');
-    setMessage('');
-
-    try {
-      const result = await verifyOtp(formData.email, otp);
-      if (result && result.success) {
-        authenticate(
-          {
-            id: result.user?.id || 'user-' + Date.now(),
-            email: result.user?.email || formData.email,
-            role: result.user?.role || formData.role,
-            name: result.user?.full_name || formData.name,
-          },
-          result.token || ''
-        );
-        setMessage('Registration & verification successful! Redirecting...');
-        setTimeout(() => navigate('/'), 1500);
-      }
-    } catch (err) {
-      setError(err.message || 'OTP verification failed. Please check the code.');
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setError('');
-    try {
-      await resendOtp(formData.email);
-      setMessage('OTP resent successfully. Check your inbox.');
-    } catch (err) {
-      setError(err.message || 'Failed to resend OTP.');
+      setError('Registration failed');
     }
   };
 
@@ -97,28 +48,21 @@ export default function Register() {
       backgroundRepeat: 'no-repeat',
       backgroundAttachment: 'fixed',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'space-between',
     }}>
 
-
+      {/* Left Side Logo */}
+      <div className="logo-container" style={{ flex: '1 1 300px', display: 'flex', justifyContent: 'center' }}>
+        <img src="/logo.jpeg" alt="Med India Logo" className="brand-logo" />
+      </div>
 
       {/* Form Panel */}
-      <div
-        className="register-card"
-        style={{
-        width: "100%",
-        maxWidth: "450px",
-
-        border: "1.5px solid #4F5FA8",
-        borderRadius: "34px",
-
-        padding: "30px",
-
-        background: "rgba(255,255,255,0.18)",
-        backdropFilter: "blur(2px)",
-        WebkitBackdropFilter: "blur(2px)",
-
-        boxSizing: "border-box",
+      <div style={{
+        background: 'transparent',
+        boxShadow: 'none',
+        border: 'none',
+        backdropFilter: 'none',
+        padding: '2rem',
 
       }}>
 
@@ -130,126 +74,38 @@ export default function Register() {
         {error && <div style={{ background: '#FEE2E2', color: '#B91C1C', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', fontSize: '15px' }}>{error}</div>}
         {message && <div style={{ background: '#D1FAE5', color: '#065F46', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', fontSize: '15px' }}>{message}</div>}
 
-        {step === 'otp' ? (
-          <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1B8A43', fontWeight: '700', fontSize: '14px', marginBottom: '0.5rem' }}>
-                <KeyRound size={16} strokeWidth={2.5} /> Enter 6-Digit Verification Code
-              </div>
-              <div style={{ position: 'relative' }}>
-                <div style={iconWrapperStyle}><KeyRound size={20} /></div>
-                <input
-                  type="text"
-                  placeholder="e.g. 123456"
-                  style={{ ...inputStyle, fontSize: '20px', letterSpacing: '4px', textAlign: 'center' }}
-                  value={otp}
-                  onChange={e => setOtp(e.target.value)}
-                  maxLength={6}
-                  required
-                />
-              </div>
-            </div>
+        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-            <div style={{ padding: "2px", borderRadius: "22px", background: "linear-gradient(135deg, #F27C08 0%, #F2A700 30%, #38B64A 70%, #1B8A43 100%)" }}>
-              <button
-                type="submit"
+          {/* Segmented Role Selector */}
+          <div style={{ display: 'flex', border: '1.5px solid #F27C08', borderRadius: '12px', overflow: 'hidden', background: 'white' }}>
+            {roles.map((r, index) => (
+              <div
+                key={r}
+                onClick={() => setFormData({ ...formData, role: r })}
                 style={{
-                  width: "100%",
-                  padding: "1rem",
-                  background: "#1B8A43",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "20px",
-                  fontWeight: "700",
-                  fontSize: "18px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "1rem",
-                  cursor: "pointer",
+                  flex: 1,
+                  textAlign: 'center',
+                  padding: '0.875rem 0',
+                  cursor: 'pointer',
+                  fontWeight: '700',
+                  fontSize: '15px',
+                  background: formData.role === r ? '#1B8A43' : 'transparent',
+                  color: formData.role === r ? 'white' : '#4b5563',
+                  borderRight: index !== roles.length - 1 ? '1px solid #e5e7eb' : 'none',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                Verify OTP & Complete Setup
-                <ArrowRight size={20} color="white" />
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-              <button type="button" onClick={handleResendOtp} style={{ background: 'none', border: 'none', color: '#F27C08', fontWeight: '700', cursor: 'pointer' }}>
-                Resend OTP
-              </button>
-              <button type="button" onClick={() => setStep('register')} style={{ background: 'none', border: 'none', color: '#6B7280', fontWeight: '600', cursor: 'pointer' }}>
-                Back to Registration
-              </button>
-            </div>
-          </form>
-        ) : (
-          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-
-
-
-
-{/* Role selecter */}
-
-<div
-  style={{
-    display: "flex",
-    border: "2.5px solid #F27C08",
-    borderRadius: "18px",
-    padding: "4px",
-    background: "#fff",
-  }}
->
-  {roles.map((r, index) => {
-    const active = formData.role === r;
-
-    return (
-      <div
-        key={r}
-        onClick={() => setFormData({ ...formData, role: r })}
-        style={{
-          flex: 1,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-
-          height: "48px",
-          
-
-          background: active ? "#1B8A43" : "#fff",
-          color: active ? "#fff" : "#4B5563",
-
-          borderRadius: active ? "12px" : "0",
-
-          fontWeight: 700,
-          fontSize: "16px",
-          cursor: "pointer",
-
-          transition: "all .2s ease",
-
-          borderRight:"none",
-        }}
-      >
-        {r}
-      </div>
-    );
-  })}
-</div>
-
-
-
-
-
-
-
+                {r}
+              </div>
+            ))}
+          </div>
 
           {/* Personal Details Section */}
           <div>
             <div style={sectionHeaderStyle(false)}>
               <User size={18} strokeWidth={3} /> Personal Details
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
               <div style={{ gridColumn: '1 / -1', position: 'relative' }}>
                 <div style={iconWrapperStyle}><User size={20} /></div>
                 <input type="text" placeholder="Enter your full name *" style={inputStyle} value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
@@ -272,7 +128,7 @@ export default function Register() {
                 <Star size={18} fill="#F27C08" strokeWidth={0} /> Delivery Address
               </div>
               <div style={{ position: 'relative' }}>
-                <div style={iconWrapperStyle}><MapPin size={18} /></div>
+                <div style={iconWrapperStyle}><MapPin size={20} /></div>
                 <input type="text" placeholder="Enter your full delivery address *" style={inputStyle} value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} required />
               </div>
             </div>
@@ -307,7 +163,7 @@ export default function Register() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                 <div style={{ gridColumn: '1 / -1', position: 'relative' }}>
-                  <div style={iconWrapperStyle}><Star size={20} fill="#125f2eff" /></div>
+                  <div style={iconWrapperStyle}><Star size={20} fill="#1B8A43" /></div>
                   <input type="text" placeholder="e.g. General Physician, Cardiologist" style={inputStyle} value={formData.specialization} onChange={e => setFormData({ ...formData, specialization: e.target.value })} required />
                 </div>
                 <div style={{ position: 'relative' }}>
@@ -345,64 +201,37 @@ export default function Register() {
             </div>
           </div>
 
-<div
-  style={{
-    marginTop: "1rem",
-    padding: "2px",
-    borderRadius: "22px",
-    background:
-      "linear-gradient(135deg, #F27C08 0%, #F2A700 30%, #38B64A 70%, #1B8A43 100%)",
-  }}
->
-  <button
-    type="submit"
-    style={{
-      width: "100%",
-      padding: "1.25rem",
-
-      background: "#8A8A8A",
-      color: "#fff",
-
-      border: "4px",
-      borderRadius: "20px",
-
-      fontWeight: "700",
-      fontSize: "18px",
-
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "1rem",
-
-      cursor: "pointer",
-      transition: "transform .1s ease",
-    }}
-    onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-    onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-  >
-    Register as {formData.role}
-
-    <div
-      style={{
-        width: "46px",
-        height: "46px",
-        borderRadius: "50%",
-        background: "#3E3E3E",
-
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-
-        flexShrink: 0,
-      }}
-    >
-      <ArrowRight size={20} color="white" />
-    </div>
-  </button>
-</div>
+          {/* Gray Pill Button */}
+          <button
+            type="submit"
+            style={{
+              marginTop: '1rem',
+              width: '100%',
+              padding: '1.25rem',
+              background: '#7a7a7a',
+              color: 'white',
+              border: 'none',
+              borderRadius: '16px',
+              fontWeight: '700',
+              fontSize: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '1rem',
+              cursor: 'pointer',
+              transition: 'transform 0.1s ease',
+              boxShadow: '0 0 0 2px #F27C08, 0 0 0 4px #1B8A43'
+            }}
+            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            Register as {formData.role}
+            <div style={{ background: '#374151', borderRadius: '50%', padding: '4px', display: 'flex' }}>
+              <ArrowRight size={16} color="white" />
+            </div>
+          </button>
         </form>
-        )}
 
         <p style={{ marginTop: '2rem', fontSize: '15px', color: '#6b7280', textAlign: 'center' }}>
           Already have an account? <Link to="/login" style={{ color: '#1B8A43', fontWeight: '800', textDecoration: 'none' }}>Sign In</Link>
@@ -419,8 +248,9 @@ export default function Register() {
         }
         
         .brand-logo {
-           max-width: 300px;
-           margin-bottom: 1rem;
+          width: 100%;
+          max-width: 450px;
+          mix-blend-mode: multiply; /* Removes the white background */
         }
         
         @media (max-width: 900px) {
@@ -432,16 +262,6 @@ export default function Register() {
           .brand-logo {
             max-width: 300px;
             margin-bottom: 1rem;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .register-layout {
-            padding: 1.5rem 0.75rem !important;
-          }
-          .register-card {
-            padding: 20px 16px !important;
-            border-radius: 24px !important;
           }
         }
       `}</style>

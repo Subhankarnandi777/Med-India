@@ -1,57 +1,26 @@
-from sqlalchemy import Column, String, DateTime, Integer, Float, Boolean, BigInteger
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Column, String, DateTime
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
 class User(Base):
-    __tablename__ = "profiles"
+    __tablename__ = "profiles"   # <-- verify this is your actual table name
 
-    id = Column(String, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     email = Column(String)
     full_name = Column(String)
     role = Column(String)
     mobile = Column(String)
     extra_details = Column(JSONB)
     created_at = Column(DateTime)
+    password_hash = Column(String)
 
-class Medicine(Base):
-    __tablename__ = "medicines"
+class PrescriptionUpload(Base):
+    __tablename__ = "prescription_uploads"
 
-    id = Column(BigInteger, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    generic_name = Column(String, nullable=False)
-    price = Column(Float, nullable=False)
-    stock = Column(Integer, nullable=False)
-    category = Column(String, nullable=False)
-    requires_prescription = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime)
-
-class Order(Base):
-    __tablename__ = "orders"
-
-    id = Column(String, primary_key=True, index=True)
-    patient_id = Column(String, nullable=True)
-    patient_name = Column(String, nullable=False)
-    items = Column(JSONB, nullable=False)  # Array of dict (name, quantity, price)
-    status = Column(String, nullable=False)
-    prescription_url = Column(String, nullable=True)
-    created_at = Column(DateTime)
-
-class Payout(Base):
-    __tablename__ = "payouts"
-
-    id = Column(String, primary_key=True, index=True)
-    amount = Column(Float, nullable=False)
-    status = Column(String, nullable=False)
-    created_at = Column(DateTime)
-
-class Prescription(Base):
-    __tablename__ = "prescriptions"
-
-    id = Column(String, primary_key=True, index=True)
-    patient_name = Column(String, nullable=False)
-    doctor_name = Column(String, nullable=False)
-    medicines = Column(JSONB, nullable=False)  # Array of dict (name, quantity, price)
-    instructions = Column(String, nullable=True)
-    created_at = Column(DateTime)
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    user_id = Column(UUID(as_uuid=True)) # In a real app, ForeignKey("profiles.id")
+    file_path = Column(String)
+    status = Column(String, default="PENDING")
+    uploaded_at = Column(DateTime)
